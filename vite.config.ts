@@ -5,4 +5,7 @@ import { sites } from '@openai/sites-vite-plugin'
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), sites()],
+  server: {
+    allowedHosts: true,
+  },
 })
