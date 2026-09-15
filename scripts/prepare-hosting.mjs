@@ -1,4 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rename, writeFile } from 'node:fs/promises'
+
+await rename('dist/app.html', 'dist/index.html')
 
 await mkdir('dist/server', { recursive: true })
 await writeFile(
