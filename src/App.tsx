@@ -1,151 +1,81 @@
-import { FormEvent, useEffect, useState } from 'react'
-import {
-  ArrowRight, CalendarDays, ChevronRight, Facebook, Heart, Instagram,
-  Menu, Play, Search, Send, ShoppingBag, X, Youtube,
-} from 'lucide-react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { ArrowRight, CalendarDays, Check, ChevronRight, Facebook, Heart, Instagram, MapPin, Menu, Play, Search, Send, ShoppingBag, X, Youtube, Twitter } from 'lucide-react'
 
-type Article = {
-  title: string
-  category: string
-  date: string
-  image: string
-  href: string
-}
-
+type Article = { title: string; category: string; date: string; image: string; href: string }
+type RemotePost = { date: string; link: string; title: { rendered: string }; _embedded?: { 'wp:featuredmedia'?: Array<{ source_url?: string }>; 'wp:term'?: Array<Array<{ name: string }>> } }
+type EventItem = { id: number; date: string; month: string; title: string; location: string; type: string; description: string }
 const site = 'https://www.caballo.tv/v2'
-
-const articles: Article[] = [
-  {
-    title: 'Lazada 11.5 Carmelo Loya Memorial 2025, Santa Isabel Chihuahua.',
-    category: 'FOTOS', date: '16 FEB 2025',
-    image: `${site}/wp-content/uploads/2025/02/1O2A9790-copy.jpg`,
-    href: `${site}/lazada-11-5-carmelo-loya-memorial-2025-santa-isabel-chihuahua/`,
-  },
-  {
-    title: 'Lazada 11.5 Carmelo Loya Memorial, Arena Dos Potrillos',
-    category: 'FOTOS', date: '16 FEB 2025',
-    image: `${site}/wp-content/uploads/2025/02/1O2A9572-copy.jpg`,
-    href: `${site}/lazada-11-5-carmelo-loya-memorial-arena-dos-potrillos/`,
-  },
-  {
-    title: 'El desfile en el Rodeo de Promotora de Rodeos.',
-    category: 'RODEO', date: '23 ABR 2024',
-    image: `${site}/wp-content/uploads/2024/04/DSC_3212-copy.jpg`,
-    href: `${site}/el-desfile-en-el-rodeo-de-primavera-2024-de-promotora-de-rodeos/`,
-  },
-  {
-    title: 'La gente en el Rodeo de la Primavera 2024 de Promotora de Rodeos',
-    category: 'COMUNIDAD', date: '22 ABR 2024',
-    image: `${site}/wp-content/uploads/2024/04/DSC_2974-copy.jpg`,
-    href: `${site}/la-gente-en-el-rodeo-de-la-primavera-2024-de-promotora-de-rodeos-parte-1/`,
-  },
+const basePath = '/caballo-tv-propuesta'
+const localPath = (path = '') => `${basePath}/${path}`
+const fallbackArticles: Article[] = [
+  { title: 'Lazada 11.5 Carmelo Loya Memorial 2025, Santa Isabel Chihuahua.', category: 'FOTOS', date: '16 FEB 2025', image: `${site}/wp-content/uploads/2025/02/1O2A9790-copy.jpg`, href: `${site}/lazada-11-5-carmelo-loya-memorial-2025-santa-isabel-chihuahua/` },
+  { title: 'Lazada 11.5 Carmelo Loya Memorial, Arena Dos Potrillos', category: 'FOTOS', date: '16 FEB 2025', image: `${site}/wp-content/uploads/2025/02/1O2A9572-copy.jpg`, href: `${site}/lazada-11-5-carmelo-loya-memorial-arena-dos-potrillos/` },
+  { title: 'El desfile en el Rodeo de Promotora de Rodeos.', category: 'RODEO', date: '23 ABR 2024', image: `${site}/wp-content/uploads/2024/04/DSC_3212-copy.jpg`, href: `${site}/el-desfile-en-el-rodeo-de-primavera-2024-de-promotora-de-rodeos/` },
+  { title: 'La gente en el Rodeo de la Primavera 2024 de Promotora de Rodeos', category: 'COMUNIDAD', date: '22 ABR 2024', image: `${site}/wp-content/uploads/2024/04/DSC_2974-copy.jpg`, href: `${site}/la-gente-en-el-rodeo-de-la-primavera-2024-de-promotora-de-rodeos-parte-1/` },
 ]
-
-const events = [
-  ['07', 'SEP', 'Festival ecuestre del norte', 'Chihuahua, Chih.'],
-  ['21', 'SEP', 'Circuito regional de barriles', 'Cd. Guerrero, Chih.'],
-  ['12', 'OCT', 'Rodeo con causa', 'Delicias, Chih.'],
+const events: EventItem[] = [
+  { id: 1, date: '2026-09-21', month: 'SEP', title: 'Circuito regional de barriles', location: 'Cd. Guerrero, Chih.', type: 'Competencia', description: 'Jornada regional de barriles, categorías abiertas y juveniles.' },
+  { id: 2, date: '2026-10-12', month: 'OCT', title: 'Rodeo con causa', location: 'Delicias, Chih.', type: 'Rodeo', description: 'Rodeo familiar a beneficio de la comunidad local.' },
+  { id: 3, date: '2026-10-24', month: 'OCT', title: 'Clínica de rienda y manejo', location: 'Chihuahua, Chih.', type: 'Clínica', description: 'Entrenamiento práctico para jinetes y aficionados.' },
+  { id: 4, date: '2026-11-08', month: 'NOV', title: 'Expo ecuestre del norte', location: 'Cuauhtémoc, Chih.', type: 'Exposición', description: 'Exhibición de razas, equipo y cultura ecuestre.' },
 ]
+const nav = [{ label: 'Inicio', href: localPath() }, { label: 'Blog', href: localPath('blog') }, { label: 'Fotos', href: localPath('fotos') }, { label: 'Videos', href: localPath('videos') }, { label: 'Cartones', href: localPath('cartones') }, { label: 'Clasificado', href: localPath('clasificado') }, { label: 'Agenda', href: localPath('agenda') }]
+const socialPosts = [
+  { image: `${site}/wp-content/uploads/2024/04/DSC_3212-copy.jpg`, text: 'El rodeo se vive en comunidad.' }, { image: `${site}/wp-content/uploads/2025/02/1O2A9572-copy.jpg`, text: 'Momentos que merecen quedar para siempre.' }, { image: `${site}/wp-content/uploads/2024/04/DSC_2974-copy.jpg`, text: 'Nuestra gente, nuestra tradición.' }, { image: `${site}/wp-content/uploads/2024/04/DSC_2662-copy.jpg`, text: 'La pista siempre nos llama.' },
+]
+const cleanText = (value: string) => value.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&#8217;/g, '’').trim()
+const formatDate = (value: string) => new Intl.DateTimeFormat('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(`${value}T12:00:00`)).replace('.', '').toUpperCase()
+function Wordmark() { return <a href={localPath()} className="wordmark" aria-label="Caballo TV, inicio"><span>caballo</span><b>.tv</b></a> }
+function SectionHead({ eyebrow, title, action, href = '#explorar' }: { eyebrow: string; title: string; action?: string; href?: string }) { return <div className="section-head"><div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>{action && <a className="text-link" href={href}>{action}<ArrowRight size={16} /></a>}</div> }
 
-const nav = ['Inicio', 'Revista', 'Fotos', 'Videos', 'Cartones', 'Clasificado']
-
-function Wordmark() {
-  return <a href="#inicio" className="wordmark" aria-label="Caballo TV, inicio"><span>caballo</span><b>.tv</b></a>
-}
-
-function SectionHead({ eyebrow, title, action }: { eyebrow: string; title: string; action?: string }) {
-  return <div className="section-head">
-    <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>
-    {action && <a className="text-link" href="#explorar">{action}<ArrowRight size={16} /></a>}
-  </div>
+function CollectionPage({ page, savedEvents, onSaveEvent }: { page: string; savedEvents: number[]; onSaveEvent: (item: EventItem) => void }) {
+  const pageData: Record<string, { eyebrow: string; title: string; description: string }> = {
+    blog: { eyebrow: 'REVISTA CABALLO TV', title: 'Historias para vivir el caballo.', description: 'Reportajes, tradición, entrenamiento y comunidad en un solo lugar.' },
+    fotos: { eyebrow: 'FOTOGRAFÍA', title: 'La pista, un instante a la vez.', description: 'Galerías de eventos y la gente que le da vida a la cultura ecuestre.' },
+    videos: { eyebrow: 'CABALLO TV EN VIDEO', title: 'La pasión se mueve.', description: 'Competencias, entrevistas y recorridos para disfrutar donde estés.' },
+    cartones: { eyebrow: 'CARTONES VAQUEROS', title: 'Una sonrisa también monta.', description: 'El lado más cercano y divertido de la vida vaquera.' },
+    clasificado: { eyebrow: 'MERCADO ECUESTRE', title: 'Encuentra lo que buscas.', description: 'Caballos, equipo y servicios para la comunidad ecuestre.' },
+    agenda: { eyebrow: 'AGENDA ECUESTRE', title: 'Nos vemos en la pista.', description: 'Eventos para planear la próxima salida de la comunidad.' },
+  }
+  const data = pageData[page]
+  const photos = [fallbackArticles[0].image, fallbackArticles[1].image, fallbackArticles[2].image, fallbackArticles[3].image, `${site}/wp-content/uploads/2025/02/1O2A9765-copy.jpg`, `${site}/wp-content/uploads/2024/04/DSC_2662-copy.jpg`]
+  const listings = [['Caballo cuarto de milla', 'Chihuahua, Chih.', '$185,000 MXN', photos[0]], ['Silla charra artesanal', 'Ciudad de México', '$24,500 MXN', photos[1]], ['Remolque para 2 caballos', 'Delicias, Chih.', '$96,000 MXN', photos[2]], ['Clínica de rienda', 'Monterrey, N.L.', 'Consultar', photos[5]]]
+  return <div className="site-shell page-view"><div className="proposal-ribbon"><span>PROPUESTA DIGITAL 2026</span><span>•</span><span>{data.eyebrow} · Página independiente</span></div><header className="header page-header"><div className="wrap header-inner"><Wordmark /><nav className="desktop-nav" aria-label="Navegación principal">{nav.map(item => <a href={item.href} className={item.href.endsWith(`/${page}`) ? 'active' : ''} key={item.label}>{item.label}</a>)}</nav><a className="page-home" href={localPath()}><ArrowRight size={16} /> Inicio</a></div></header><main><section className="page-hero"><div className="wrap"><p className="eyebrow">{data.eyebrow}</p><h1>{data.title}</h1><p>{data.description}</p></div></section>
+    {page === 'blog' && <section className="wrap page-section"><div className="page-grid editorial-grid">{[...fallbackArticles, ...fallbackArticles].map((article, index) => <a className="editorial-row" href={article.href} target="_blank" rel="noreferrer" key={`${article.title}-${index}`}><img src={article.image} alt="" /><div><span>{article.category} · {article.date}</span><h2>{article.title}</h2><p>Una historia de la comunidad Caballo TV.</p></div><ArrowRight size={20} /></a>)}</div></section>}
+    {page === 'fotos' && <section className="wrap page-section"><div className="photo-gallery">{photos.map((photo, index) => <a href={photo} target="_blank" rel="noreferrer" key={photo}><img src={photo} alt="Galería ecuestre" /><span>Ver foto {String(index + 1).padStart(2, '0')}</span></a>)}</div></section>}
+    {page === 'videos' && <section className="wrap page-section"><div className="video-cards">{photos.slice(0, 4).map((photo, index) => <a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" key={photo}><div><img src={photo} alt="Video de Caballo TV" /><span className="play-button"><Play fill="currentColor" size={20} /></span></div><p>Caballo TV</p><h2>{['La emoción del rodeo', 'Historias desde la arena', 'La comunidad en movimiento', 'Tradición que sigue viva'][index]}</h2><span>Ver en YouTube <ArrowRight size={15} /></span></a>)}</div></section>}
+    {page === 'cartones' && <section className="wrap page-section"><div className="cartoon-grid">{['El caballo también sabe cuando es lunes.', 'Mi plan de ahorro tiene cuatro patas.', 'No es tarde, es hora de ensillar.', 'La mejor terapia tiene crines.'].map((caption, index) => <article key={caption}><span>Cartón {String(index + 1).padStart(2, '0')}</span><div className={`cartoon-art art-${index + 1}`}><b>¡Arre!</b><i>✦</i></div><h2>{caption}</h2><button>Compartir</button></article>)}</div></section>}
+    {page === 'clasificado' && <section className="wrap page-section"><div className="market-toolbar"><span>Mostrando 24 anuncios</span><div><button className="selected">Todo</button><button>Caballos</button><button>Equipo</button><button>Servicios</button></div><button className="button button-dark">Publicar anuncio <ArrowRight size={16} /></button></div><div className="listing-grid">{listings.map(listing => <article key={listing[0]}><img src={listing[3]} alt="" /><div><span>{listing[1]}</span><h2>{listing[0]}</h2><b>{listing[2]}</b><a href="#contacto">Ver anuncio <ArrowRight size={15} /></a></div></article>)}</div></section>}
+    {page === 'agenda' && <section className="wrap page-section"><div className="agenda-page-list">{events.map(item => <article className="event" key={item.id}><div className="event-date"><b>{item.date.slice(-2)}</b><span>{item.month}</span></div><div><p className="event-type">{item.type}</p><h3>{item.title}</h3><p className="event-location"><MapPin size={13} />{item.location}</p><p className="event-description">{item.description}</p></div><button className={savedEvents.includes(item.id) ? 'calendar-save saved' : 'calendar-save'} onClick={() => onSaveEvent(item)}>{savedEvents.includes(item.id) ? <Check size={18} /> : <CalendarDays size={18} />}<span>{savedEvents.includes(item.id) ? 'Agregado' : 'Calendario'}</span></button></article>)}</div></section>}
+  </main><footer><div className="wrap footer-bottom"><span>© 2026 Caballo TV</span><span>Propuesta de experiencia digital</span></div></footer></div>
 }
 
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const [notice, setNotice] = useState('')
-
-  useEffect(() => {
-    document.body.style.overflow = menuOpen || searchOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
-  }, [menuOpen, searchOpen])
-
-  const handleSubscribe = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setNotice('¡Listo! Muy pronto recibirás historias que valen la pena contar.')
-  }
-
-  const submitSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setNotice(query ? `Buscaremos “${query}” en Caballo TV.` : 'Escribe algo para buscar.')
-    setSearchOpen(false)
-  }
-
+  const [menuOpen, setMenuOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(false); const [query, setQuery] = useState(''); const [searchResults, setSearchResults] = useState<Article[]>([]); const [searching, setSearching] = useState(false); const [notice, setNotice] = useState(''); const [liveArticles, setLiveArticles] = useState<Article[]>(fallbackArticles); const [feedStatus, setFeedStatus] = useState<'live' | 'fallback'>('fallback'); const [activeEventFilter, setActiveEventFilter] = useState('Todos'); const [savedEvents, setSavedEvents] = useState<number[]>([])
+  useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [menuOpen, searchOpen])
+  useEffect(() => { const controller = new AbortController(); fetch(`${site}/wp-json/wp/v2/posts?per_page=8&_embed&_fields=date,link,title,_embedded`, { signal: controller.signal }).then(res => res.ok ? res.json() : Promise.reject()).then((posts: RemotePost[]) => { const mapped = posts.map(post => ({ title: cleanText(post.title.rendered), category: post._embedded?.['wp:term']?.[0]?.[0]?.name?.toUpperCase() || 'REVISTA', date: formatDate(post.date), image: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || fallbackArticles[0].image, href: post.link })).filter(post => post.title); if (mapped.length >= 4) { setLiveArticles(mapped); setFeedStatus('live') } }).catch(() => undefined); return () => controller.abort() }, [])
+  const filteredEvents = useMemo(() => activeEventFilter === 'Todos' ? events : events.filter(event => event.type === activeEventFilter), [activeEventFilter]); const news = liveArticles.length >= 4 ? liveArticles : fallbackArticles
+  const handleSubscribe = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); setNotice('¡Listo! Te avisaremos cuando haya nuevas historias y eventos.'); event.currentTarget.reset() }
+  const submitSearch = async (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (!query.trim()) { setNotice('Escribe algo para buscar.'); return }; setSearching(true); setSearchResults([]); try { const response = await fetch(`${site}/wp-json/wp/v2/posts?search=${encodeURIComponent(query)}&per_page=6&_embed&_fields=date,link,title,_embedded`); const posts: RemotePost[] = await response.json(); setSearchResults(posts.map(post => ({ title: cleanText(post.title.rendered), category: post._embedded?.['wp:term']?.[0]?.[0]?.name?.toUpperCase() || 'REVISTA', date: formatDate(post.date), image: post._embedded?.['wp:featuredmedia']?.[0]?.source_url || fallbackArticles[0].image, href: post.link }))) } catch { setNotice('No pudimos consultar el archivo en este momento.') } finally { setSearching(false) } }
+  const saveEvent = (item: EventItem) => { const start = item.date.replaceAll('-', ''); const end = new Date(`${item.date}T23:59:00`); const endDate = `${end.getFullYear()}${String(end.getMonth() + 1).padStart(2, '0')}${String(end.getDate()).padStart(2, '0')}`; const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART;VALUE=DATE:${start}\nDTEND;VALUE=DATE:${endDate}\nSUMMARY:${item.title}\nLOCATION:${item.location}\nDESCRIPTION:${item.description}\nEND:VEVENT\nEND:VCALENDAR`; const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' })); const anchor = document.createElement('a'); anchor.href = url; anchor.download = `${item.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.ics`; anchor.click(); URL.revokeObjectURL(url); setSavedEvents(current => current.includes(item.id) ? current : [...current, item.id]); setNotice('Evento agregado a tu calendario.') }
+  const currentPage = window.location.pathname.replace(basePath, '').replace(/^\/+|\/+$/g, '')
+  if (['blog', 'fotos', 'videos', 'cartones', 'clasificado', 'agenda'].includes(currentPage)) return <CollectionPage page={currentPage} savedEvents={savedEvents} onSaveEvent={saveEvent} />
   return <div className="site-shell" id="inicio">
-    <div className="topline"><div className="wrap topline-inner"><span>La comunidad ecuestre más grande en español</span><div><a href="#anunciate">Anúnciate</a><span className="dot" /> <a href="#contacto">Contacto</a></div></div></div>
-
-    <header className="header">
-      <div className="wrap header-inner">
-        <Wordmark />
-        <nav className="desktop-nav" aria-label="Navegación principal">
-          {nav.map((item, i) => <a href={i === 0 ? '#inicio' : '#explorar'} className={i === 0 ? 'active' : ''} key={item}>{item}</a>)}
-        </nav>
-        <div className="nav-actions"><button onClick={() => setSearchOpen(true)} aria-label="Buscar"><Search size={20} /></button><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú"><Menu size={23} /></button></div>
-      </div>
-    </header>
-
+    <div className="proposal-ribbon"><span>PROPUESTA DIGITAL 2026</span><span>•</span><span>Noticias conectadas · Agenda accionable · Comunidad social</span></div><div className="topline"><div className="wrap topline-inner"><span>La comunidad ecuestre más grande en español</span><div><a href="#anunciate">Anúnciate</a><span className="dot" /><a href="#contacto">Contacto</a></div></div></div>
+    <header className="header"><div className="wrap header-inner"><Wordmark /><nav className="desktop-nav" aria-label="Navegación principal">{nav.map((item, i) => <a href={item.href} target={item.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer" className={i === 0 ? 'active' : ''} key={item.label}>{item.label}</a>)}</nav><div className="nav-actions"><button onClick={() => setSearchOpen(true)} aria-label="Buscar"><Search size={20} /></button><button className="menu-button" onClick={() => setMenuOpen(true)} aria-label="Abrir menú"><Menu size={23} /></button></div></div></header>
     <main>
-      <section className="hero wrap">
-        <article className="hero-main">
-          <img src={articles[0].image} alt="Jinete participando en una lazada" />
-          <div className="hero-shade" />
-          <div className="hero-copy"><p className="tag">{articles[0].category}</p><h1>Historias que nos llevan a vivir el caballo.</h1><p className="hero-summary">La emoción de la pista, el orgullo de la tradición y las personas que hacen comunidad.</p><a href={articles[0].href} target="_blank" rel="noreferrer" className="button button-light">Ver historia <ArrowRight size={18} /></a></div>
-        </article>
-        <aside className="hero-side">
-          <p className="eyebrow">EN PORTADA</p>
-          {articles.slice(1, 3).map(article => <a className="side-story" href={article.href} target="_blank" rel="noreferrer" key={article.title}><img src={article.image} alt="" /><div><p className="tag dark">{article.category}</p><h3>{article.title}</h3><span>{article.date}</span></div><ChevronRight size={18} /></a>)}
-          <a className="side-cta" href="#explorar"><span>Explora la revista</span><ArrowRight size={18} /></a>
-        </aside>
-      </section>
-
-      <section className="quick-links wrap" aria-label="Explora Caballo TV">
-        <a href="#explorar"><span className="quick-number">01</span><span>Noticias<br />y reportajes</span><ArrowRight size={18} /></a>
-        <a href="#video"><span className="quick-number">02</span><span>Video<br />en movimiento</span><Play size={16} fill="currentColor" /></a>
-        <a href="#clasificados"><span className="quick-number">03</span><span>Mercado<br />ecuestre</span><ShoppingBag size={18} /></a>
-      </section>
-
-      <section className="content-section wrap" id="explorar">
-        <SectionHead eyebrow="LO MÁS RECIENTE" title="La vida ecuestre, al día." action="Ver todas las historias" />
-        <div className="article-grid">
-          {articles.map((article, i) => <a href={article.href} target="_blank" rel="noreferrer" className={`article-card card-${i + 1}`} key={article.title}>
-            <div className="image-wrap"><img src={article.image} alt="" /><span className="tag image-tag">{article.category}</span></div>
-            <p className="card-date">{article.date}</p><h3>{article.title}</h3><span className="read-more">Leer historia <ArrowRight size={15} /></span>
-          </a>)}
-        </div>
-      </section>
-
-      <section className="video-section" id="video"><div className="wrap video-grid">
-        <div className="video-copy"><p className="eyebrow light">CABALLO TV EN VIDEO</p><h2>La pasión se ve mejor en movimiento.</h2><p>Entrevistas, competencias, recorridos y momentos que solo entiendes cuando amas los caballos.</p><a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" className="button button-gold"><Youtube size={18} /> Ir al canal</a></div>
-        <a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" className="video-frame" aria-label="Ver videos de Caballo TV"><img src={`${site}/wp-content/uploads/2024/04/DSC_2662-copy.jpg`} alt="Competencia ecuestre" /><span className="play-button"><Play fill="currentColor" size={25} /></span><span className="video-caption">VER ÚLTIMO VIDEO</span></a>
-      </div></section>
-
-      <section className="content-section wrap agenda-section">
-        <SectionHead eyebrow="AGENDA ECUESTRE" title="Nos vemos en la pista." action="Ver calendario" />
-        <div className="agenda-layout"><div className="agenda-list">{events.map(([day, month, title, location]) => <a href="#contacto" className="event" key={title}><div className="event-date"><b>{day}</b><span>{month}</span></div><div><h3>{title}</h3><p>{location}</p></div><ChevronRight size={19} /></a>)}</div><div className="agenda-note"><CalendarDays size={28} /><p className="eyebrow">¿ORGANIZAS UN EVENTO?</p><h3>Tu evento merece estar en la agenda de todos.</h3><a href="#contacto" className="text-link">Publicarlo aquí <ArrowRight size={16} /></a></div></div>
-      </section>
-
-      <section className="market-section" id="clasificados"><div className="wrap market-grid"><div><p className="eyebrow">CLASIFICADOS</p><h2>Todo lo que el mundo ecuestre está buscando.</h2><p>Caballos, equipo y servicios. Un espacio cuidado para conectar a compradores y vendedores de la comunidad.</p><a href="#contacto" className="button button-dark">Explorar clasificados <ArrowRight size={18} /></a></div><div className="market-stats"><div><b>+15</b><span>años documentando<br />la cultura ecuestre</span></div><div><b>01</b><span>comunidad que<br />habla tu idioma</span></div></div></div></section>
-
-      <section className="newsletter wrap" id="contacto"><div><p className="eyebrow">LA VUELTA SEMANAL</p><h2>Historias para quienes nacieron para montar.</h2></div><form onSubmit={handleSubscribe}><label htmlFor="email" className="sr-only">Tu correo electrónico</label><div className="input-row"><input id="email" type="email" required placeholder="Tu correo electrónico" /><button type="submit" aria-label="Suscribirme"><Send size={19} /></button></div><p>Una selección semanal. Sin ruido, solo lo que importa.</p></form></section>
-      {notice && <div className="toast" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Cerrar">×</button></div>}
+      <section className="hero wrap"><article className="hero-main"><img src={news[0].image} alt="Jinete participando en una lazada" /><div className="hero-shade" /><div className="hero-copy"><p className="tag">{news[0].category}</p><h1>Historias que nos llevan a vivir el caballo.</h1><p className="hero-summary">La emoción de la pista, el orgullo de la tradición y las personas que hacen comunidad.</p><a href={news[0].href} target="_blank" rel="noreferrer" className="button button-light">Ver historia <ArrowRight size={18} /></a></div></article><aside className="hero-side"><p className="eyebrow">EN PORTADA</p>{news.slice(1, 3).map(article => <a className="side-story" href={article.href} target="_blank" rel="noreferrer" key={article.title}><img src={article.image} alt="" /><div><p className="tag dark">{article.category}</p><h3>{article.title}</h3><span>{article.date}</span></div><ChevronRight size={18} /></a>)}<a className="side-cta" href="#explorar"><span>Explora la revista</span><ArrowRight size={18} /></a></aside></section>
+      <section className="quick-links wrap"><a href={localPath('blog')}><span className="quick-number">01</span><span>Noticias<br />y reportajes</span><ArrowRight size={18} /></a><a href={localPath('videos')}><span className="quick-number">02</span><span>Video<br />en movimiento</span><Play size={16} fill="currentColor" /></a><a href={localPath('clasificado')}><span className="quick-number">03</span><span>Mercado<br />ecuestre</span><ShoppingBag size={18} /></a></section>
+      <section className="content-section wrap" id="explorar"><SectionHead eyebrow="LO MÁS RECIENTE" title="La vida ecuestre, al día." action="Ver página de blog" href={localPath('blog')} /><div className="live-bar"><span className={feedStatus === 'live' ? 'live-dot' : 'live-dot fallback'} />{feedStatus === 'live' ? 'Actualizado desde Caballo TV' : 'Selección editorial de demostración'}<span>Contenido vivo listo para CMS / WordPress</span></div><div className="article-grid">{news.slice(0, 4).map((article, i) => <a href={article.href} target="_blank" rel="noreferrer" className={`article-card card-${i + 1}`} key={article.title}><div className="image-wrap"><img src={article.image} alt="" /><span className="tag image-tag">{article.category}</span></div><p className="card-date">{article.date}</p><h3>{article.title}</h3><span className="read-more">Leer historia <ArrowRight size={15} /></span></a>)}</div></section>
+      <section className="video-section" id="video"><div className="wrap video-grid"><div className="video-copy"><p className="eyebrow light">CABALLO TV EN VIDEO</p><h2>La pasión se ve mejor en movimiento.</h2><p>Entrevistas, competencias, recorridos y momentos que solo entiendes cuando amas los caballos.</p><a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" className="button button-gold"><Youtube size={18} /> Ir al canal</a></div><a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" className="video-frame"><img src={`${site}/wp-content/uploads/2024/04/DSC_2662-copy.jpg`} alt="Competencia ecuestre" /><span className="play-button"><Play fill="currentColor" size={25} /></span><span className="video-caption">VER CANAL EN YOUTUBE</span></a></div></section>
+      <section className="content-section wrap agenda-section" id="agenda"><SectionHead eyebrow="AGENDA ECUESTRE" title="Nos vemos en la pista." action="Publicar un evento" href="#contacto" /><div className="agenda-intro"><p>Encuentra competencias, clínicas, rodeos y exposiciones. Cada evento puede guardarse directamente en el calendario del visitante.</p><div className="agenda-filters">{['Todos', 'Competencia', 'Rodeo', 'Clínica', 'Exposición'].map(filter => <button onClick={() => setActiveEventFilter(filter)} className={activeEventFilter === filter ? 'selected' : ''} key={filter}>{filter}</button>)}</div></div><div className="agenda-layout"><div className="agenda-list">{filteredEvents.map(item => <article className="event" key={item.id}><div className="event-date"><b>{item.date.slice(-2)}</b><span>{item.month}</span></div><div><p className="event-type">{item.type}</p><h3>{item.title}</h3><p className="event-location"><MapPin size={13} />{item.location}</p></div><button className={savedEvents.includes(item.id) ? 'calendar-save saved' : 'calendar-save'} onClick={() => saveEvent(item)}>{savedEvents.includes(item.id) ? <Check size={18} /> : <CalendarDays size={18} />}<span>{savedEvents.includes(item.id) ? 'Agregado' : 'Calendario'}</span></button></article>)}{filteredEvents.length === 0 && <p className="empty-events">No hay eventos en esta categoría por ahora.</p>}</div><aside className="agenda-note"><CalendarDays size={28} /><p className="eyebrow">¿ORGANIZAS UN EVENTO?</p><h3>Tu evento merece estar en la agenda de todos.</h3><p>Formulario de alta, validación editorial y difusión en web, newsletter y redes.</p><a href="#contacto" className="text-link">Publicarlo aquí <ArrowRight size={16} /></a></aside></div></section>
+      <section className="social-section"><div className="wrap"><SectionHead eyebrow="COMUNIDAD EN REDES" title="La conversación sigue en la pista." action="@caballo.tv" href="https://www.instagram.com/caballo.tv/" /><div className="social-layout"><div className="social-copy"><div className="social-profile"><span className="instagram-round"><Instagram size={22} /></span><div><b>caballo.tv</b><span>Instagram · Facebook · X · YouTube</span></div></div><p>Un centro social que convierte cada publicación en una puerta de entrada a la comunidad y a las historias del sitio.</p><div className="social-buttons"><a href="https://www.instagram.com/caballo.tv/" target="_blank" rel="noreferrer"><Instagram size={17} /> Seguir</a><a href="https://www.facebook.com/facecaballo.tv/" target="_blank" rel="noreferrer"><Facebook size={17} /> Comunidad</a></div><small>Feed listo para conectarse con Meta API o widget autorizado.</small></div><div className="social-grid">{socialPosts.map(post => <a href="https://www.instagram.com/caballo.tv/" target="_blank" rel="noreferrer" key={post.image}><img src={post.image} alt="Publicación de Caballo TV" /><span><Heart size={15} />{post.text}</span></a>)}</div></div></div></section>
+      <section className="market-section" id="clasificados"><div className="wrap market-grid"><div><p className="eyebrow">CLASIFICADOS</p><h2>Todo lo que el mundo ecuestre está buscando.</h2><p>Caballos, equipo y servicios. Un espacio cuidado para conectar a compradores y vendedores de la comunidad.</p><a href={localPath('clasificado')} className="button button-dark">Explorar clasificados <ArrowRight size={18} /></a></div><div className="market-stats"><div><b>+15</b><span>años documentando<br />la cultura ecuestre</span></div><div><b>01</b><span>comunidad que<br />habla tu idioma</span></div></div></div></section>
+      <section className="newsletter wrap" id="contacto"><div><p className="eyebrow">LA VUELTA SEMANAL</p><h2>Historias para quienes nacieron para montar.</h2></div><form onSubmit={handleSubscribe}><label htmlFor="email" className="sr-only">Tu correo electrónico</label><div className="input-row"><input id="email" type="email" required placeholder="Tu correo electrónico" /><button type="submit" aria-label="Suscribirme"><Send size={19} /></button></div><p>Una selección semanal. Sin ruido, solo lo que importa.</p></form></section>{notice && <div className="toast" role="status">{notice}<button onClick={() => setNotice('')} aria-label="Cerrar">×</button></div>}
     </main>
-
-    <footer><div className="wrap footer-main"><div><Wordmark /><p>El sitio de caballos más visitado del mundo de habla hispana. Gracias por ser parte del camino.</p></div><div><p className="footer-label">EXPLORA</p>{nav.slice(1).map(item => <a href="#explorar" key={item}>{item}</a>)}</div><div id="anunciate"><p className="footer-label">COLABOREMOS</p><a href="mailto:caballo.tv@gmail.com">caballo.tv@gmail.com</a><a href="#anunciate">Anúnciate con nosotros</a></div><div><p className="footer-label">SÍGUENOS</p><div className="socials"><a href="https://www.facebook.com/facecaballo.tv/" aria-label="Facebook"><Facebook size={18} /></a><a href="https://www.instagram.com/caballo.tv/" aria-label="Instagram"><Instagram size={18} /></a><a href="https://www.youtube.com/user/caballotv" aria-label="YouTube"><Youtube size={18} /></a></div></div></div><div className="wrap footer-bottom"><span>© 2026 Caballo TV</span><span>Hecho para la comunidad ecuestre</span></div></footer>
-
-    {menuOpen && <div className="overlay-menu"><div className="overlay-top"><Wordmark /><button onClick={() => setMenuOpen(false)} aria-label="Cerrar menú"><X size={26} /></button></div><nav>{nav.map((item, i) => <a onClick={() => setMenuOpen(false)} href={i === 0 ? '#inicio' : '#explorar'} key={item}>{item}<ArrowRight size={21} /></a>)}</nav><p>La comunidad ecuestre más grande en español.</p></div>}
-    {searchOpen && <div className="search-layer"><button className="close-search" onClick={() => setSearchOpen(false)} aria-label="Cerrar búsqueda"><X size={25} /></button><form onSubmit={submitSearch}><p className="eyebrow">BUSCAR EN CABALLO TV</p><label htmlFor="search">¿Qué estás buscando?</label><div><Search size={24} /><input autoFocus id="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Rodeo, fotos, razas..." /><button type="submit">Buscar</button></div></form></div>}
+    <footer><div className="wrap footer-main"><div><Wordmark /><p>El sitio de caballos más visitado del mundo de habla hispana. Gracias por ser parte del camino.</p></div><div><p className="footer-label">EXPLORA</p>{nav.slice(1).map(item => <a href={item.href} target="_blank" rel="noreferrer" key={item.label}>{item.label}</a>)}</div><div id="anunciate"><p className="footer-label">COLABOREMOS</p><a href="mailto:caballo.tv@gmail.com">caballo.tv@gmail.com</a><a href="#anunciate">Anúnciate con nosotros</a></div><div><p className="footer-label">SÍGUENOS</p><div className="socials"><a href="https://www.facebook.com/facecaballo.tv/" target="_blank" rel="noreferrer" aria-label="Facebook"><Facebook size={18} /></a><a href="https://x.com/caballotv" target="_blank" rel="noreferrer" aria-label="X"><Twitter size={18} /></a><a href="https://www.instagram.com/caballo.tv/" target="_blank" rel="noreferrer" aria-label="Instagram"><Instagram size={18} /></a><a href="https://www.youtube.com/user/caballotv" target="_blank" rel="noreferrer" aria-label="YouTube"><Youtube size={18} /></a></div></div></div><div className="wrap footer-bottom"><span>© 2026 Caballo TV</span><span>Hecho para la comunidad ecuestre</span></div></footer>
+    {menuOpen && <div className="overlay-menu"><div className="overlay-top"><Wordmark /><button onClick={() => setMenuOpen(false)} aria-label="Cerrar menú"><X size={26} /></button></div><nav>{nav.map(item => <a onClick={() => setMenuOpen(false)} href={item.href} key={item.label}>{item.label}<ArrowRight size={21} /></a>)}</nav><p>La comunidad ecuestre más grande en español.</p></div>}
+    {searchOpen && <div className="search-layer"><button className="close-search" onClick={() => setSearchOpen(false)} aria-label="Cerrar búsqueda"><X size={25} /></button><form onSubmit={submitSearch}><p className="eyebrow">BUSCAR EN CABALLO TV</p><label htmlFor="search">¿Qué estás buscando?</label><div className="search-input"><Search size={24} /><input autoFocus id="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Rodeo, fotos, razas..." /><button type="submit">Buscar</button></div></form><div className="search-results">{searching && <p>Buscando en el archivo…</p>}{!searching && searchResults.map(result => <a href={result.href} target="_blank" rel="noreferrer" key={result.href}><span>{result.category} · {result.date}</span><b>{result.title}</b><ArrowRight size={18} /></a>)}{!searching && query && searchResults.length === 0 && <a className="search-original" href={`${site}/?s=${encodeURIComponent(query)}`} target="_blank" rel="noreferrer"><span>RESULTADOS EN EL SITIO ORIGINAL</span><b>Buscar “{query}” en Caballo TV</b><ArrowRight size={18} /></a>}</div></div>}
   </div>
 }
-
 export default App
