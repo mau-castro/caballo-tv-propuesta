@@ -58,7 +58,8 @@ function CollectionPage({ page, savedEvents, onSaveEvent, articles }: { page: st
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(false); const [query, setQuery] = useState(''); const [searchResults, setSearchResults] = useState<Article[]>([]); const [searching, setSearching] = useState(false); const [notice, setNotice] = useState(''); const [archive, setArchive] = useState<Article[]>(fallbackArticles); const [articleArchive, setArticleArchive] = useState<Article[]>(fallbackArticles); const [archiveReady, setArchiveReady] = useState(false); const [articleReady, setArticleReady] = useState(false); const [activeEventFilter, setActiveEventFilter] = useState('Todos'); const [savedEvents, setSavedEvents] = useState<number[]>([])
-  const currentPage = window.location.pathname.replace(basePath, '').replace(/^\/+|\/+$/g, '')
+  const redirectedPath = new URLSearchParams(window.location.search).get('p')
+  const currentPage = (redirectedPath || window.location.pathname).replace(basePath, '').replace(/^\/+|\/+$/g, '')
   const toLocalArticles = (data: { articles?: Omit<Article, 'href'>[] }) => (data.articles || []).map(article => ({ ...article, image: article.image || article.images?.[0] || fallbackArticles[0].image, href: localPath(`articulo/${article.slug}`) }))
   useEffect(() => { document.body.style.overflow = menuOpen || searchOpen ? 'hidden' : ''; return () => { document.body.style.overflow = '' } }, [menuOpen, searchOpen])
   useEffect(() => { const controller = new AbortController(); fetch(`${basePath}/content/index.json`, { signal: controller.signal }).then(res => res.ok ? res.json() : Promise.reject()).then(data => { const imported = toLocalArticles(data); if (imported.length) setArchive(imported) }).catch(() => undefined).finally(() => setArchiveReady(true)); return () => controller.abort() }, [])

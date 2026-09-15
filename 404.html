@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirigiendo…</title>
+    <script>
+      const base = '/caballo-tv-propuesta'
+      const requestedPath = window.location.pathname + window.location.search + window.location.hash
+      window.location.replace(`${base}/?p=${encodeURIComponent(requestedPath)}`)
+    </script>
+  </head>
+  <body></body>
+</html>
